@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モツの山 - 本家完全再現システム</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #231815;
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            margin: 5px 0;
+            font-size: 22px;
+            color: #f39c12;
+            text-shadow: 1px 1px 3px #000;
+        }
+
+        #game-container {
+            position: relative;
+            width: 440px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #ui-layer {
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .info-box {
+            background: #34231e;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 2px solid #f39c12;
+            font-weight: bold;
+            min-width: 70px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .score-num {
+            font-size: 20px;
+            color: #fff;
+        }
+
+        #next-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        #next-canvas {
+            background: #1a0f0d;
+            border-radius: 6px;
+            margin-top: 4px;
+            border: 1px solid #553a33;
+        }
+
+        #canvas-container {
+            position: relative;
+            border: 5px solid #e67e22;
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            background: #fffcf7;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        #game-canvas {
+            display: block;
+        }
+
+        #evolution-line {
+            width: 100%;
+            background: #34231e;
+            padding: 6px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 9px;
+            border: 1px solid #553a33;
+            box-sizing: border-box;
+            flex-wrap: wrap;
+        }
+
+        .evo-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2px;
+            min-width: 35px;
+        }
+
+        .evo-circle {
+            border-radius: 50%;
+            margin-bottom: 2px;
+            border: 1px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .evo-name {
+            transform: scale(0.85);
+            white-space: nowrap;
+        }
+
+        #end-btn {
+            margin-top: 10px;
+            background: #c0392b;
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px #7f2318;
+        }
+        #end-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #7f2318;
+        }
+    </style>
+    <!-- 物理エンジン Matter.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+</head>
+<body>
+
+    <h1>モツの山 - 本家完全再現システム</h1>
+
+    <div id="game-container">
+        <div id="ui-layer">
+            <div class="info-box">
+                <span style="font-size: 11px; color:#f39c12;">SCORE</span><br>
+                <span id="score-val" class="score-num">0</span>
+            </div>
+            <div id="next-container" class="info-box">
+                <span style="color:#f39c12;">NEXT</span>
+                <canvas id="next-canvas" width="50" height="50"></canvas>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="game-canvas" width="400" height="560"></canvas>
+        </div>
+
+        <!-- 進化ガイド -->
+        <div id="evolution-line"></div>
+
+        <button id="end-btn" onclick="gameOverAction()">精算（終了）</button>
+    </div>
+
+<script>
+// ==========================================
+// 【モツ定義データ】
+// image プロパティに実際の画像ファイル名を指定してください
+// ==========================================
+const MOTSU_TYPES = [
+    { name: "シロ",     radius: 13, color: "#f5f6fa", score: 1,  image: "shiro.png" },
+    { name: "レバ",     radius: 19, color: "#8b1e0f", score: 3,  image: "reba.png" },
+    { name: "ガツ",     radius: 26, color: "#f5cd79", score: 6,  image: "gatsu.png" },
+    { name: "アブラ",   radius: 34, color: "#fff200", score: 10, image: "abura.png" },
+    { name: "ナンコツ", radius: 42, color: "#bdc3c7", score: 15, image: "nankotsu.png" },
+    { name: "ハツ",     radius: 51, color: "#d63031", score: 21, image: "hatsu.png" },
+    { name: "タン",     radius: 61, color: "#e17055", score: 28, image: "tan.png" },
+    { name: "カシラ",   radius: 71, color: "#b33939", score: 36, image: "kashira.png" },
+    { name: "テッポウ", radius: 82, color: "#f8a5c2", score: 45, image: "teppou.png" },
+    { name: "コブクロ", radius: 93, color: "#ffaaa6", score: 55, image: "kobukuro.png" },
+    { name: "ツル",     radius: 105, color: "#1abc9c", score: 66, image: "tsuru.png" }
+];
+
+// 画像オブジェクトのプリロード処理
+MOTSU_TYPES.forEach(matsu => {
+    if (matsu.image) {
+        const img = new Image();
+        img.src = matsu.image;
+        matsu.imgElement = img;
+    }
+});
+
+const { Engine, Runner, Bodies, Composite, Body, Events } = Matter;
+
+const engine = Engine.create({ 
+    gravity: { y: 1.0 },
+    constraintIterations: 4 
+});
+const world = engine.world;
+
+const canvas = document.getElementById("game-canvas");
+const ctx = canvas.getContext("2d");
+const nextCanvas = document.getElementById("next-canvas");
+const nextCtx = nextCanvas.getContext("2d");
+
+const WIDTH = 400;
+const HEIGHT = 560;
+const DEAD_LINE = 95; 
+
+let score = 0;
+let currentMotsuIndex = getRandomMotsuIndex();
+let nextMotsuIndex = getRandomMotsuIndex();
+let isReadyToDrop = true;
+let previewX = WIDTH / 2;
+let gameOver = false;
+
+const MOTSU_PHYSICS = {
+    restitution: 0.18, 
+    friction: 0.08,    
+    density: 0.001
+};
+
+const wallOptions = { isStatic: true, friction: 0.1, render: { visible: false } };
+const ground = Bodies.rectangle(WIDTH / 2, HEIGHT + 40, WIDTH + 100, 80, wallOptions);
+const leftWall = Bodies.rectangle(-40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
+const rightWall = Bodies.rectangle(WIDTH + 40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
+Composite.add(world, [ground, leftWall, rightWall]);
+
+const runner = Runner.create();
+Runner.run(runner, engine);
+
+function init() {
+    buildEvolutionGuide();
+    drawNext();
+    requestAnimationFrame(renderLoop);
+}
+
+function getRandomMotsuIndex() {
+    return Math.floor(Math.random() * 5);
+}
+
+function buildEvolutionGuide() {
+    const guide = document.getElementById("evolution-line");
+    guide.innerHTML = "";
+    const maxRadius = MOTSU_TYPES[MOTSU_TYPES.length - 1].radius;
+    
+    MOTSU_TYPES.forEach(m => {
+        const item = document.createElement("div");
+        item.className = "evo-item";
+        
+        const displaySize = Math.max(6, (m.radius / maxRadius) * 20);
+        
+        const circle = document.createElement("div");
+        circle.className = "evo-circle";
+        circle.style.width = `${displaySize}px`;
+        circle.style.height = `${displaySize}px`;
+        
+        if (m.image) {
+            circle.style.backgroundImage = `url(${m.image})`;
+        } else {
+            circle.style.backgroundColor = m.color;
+        }
+        
+        const name = document.createElement("span");
+        name.className = "evo-name";
+        name.innerText = m.name;
+        
+        item.appendChild(circle);
+        item.appendChild(name);
+        guide.appendChild(item);
+    });
+}
+
+function drawNext() {
+    nextCtx.clearRect(0, 0, 50, 50);
+    const nextType = MOTSU_TYPES[nextMotsuIndex];
+    const r = Math.min(16, nextType.radius * 0.8);
+
+    nextCtx.save();
+    nextCtx.beginPath();
+    nextCtx.arc(25, 25, r, 0, 2 * Math.PI);
+    nextCtx.closePath();
+    nextCtx.clip();
+
+    if (nextType.imgElement && nextType.imgElement.complete && nextType.imgElement.naturalWidth !== 0) {
+        nextCtx.drawImage(nextType.imgElement, 25 - r, 25 - r, r * 2, r * 2);
+    } else {
+        nextCtx.fillStyle = nextType.color;
+        nextCtx.fill();
+    }
+
+    nextCtx.restore();
+
+    nextCtx.strokeStyle = "#fff";
+    nextCtx.lineWidth = 1.5;
+    nextCtx.beginPath();
+    nextCtx.arc(25, 25, r, 0, 2 * Math.PI);
+    nextCtx.stroke();
+}
+
+// モツ（画像または単色円）の共通描画関数
+function drawMotsu(context, x, y, radius, angle, type, alpha = 1.0) {
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+    context.globalAlpha = alpha;
+
+    // 円形にクリッピング
+    context.beginPath();
+    context.arc(0, 0, radius, 0, 2 * Math.PI);
+    context.closePath();
+    context.clip();
+
+    // 画像があれば描画、読み込み前や未設定の場合はベースカラーを描画
+    if (type.imgElement && type.imgElement.complete && type.imgElement.naturalWidth !== 0) {
+        context.drawImage(type.imgElement, -radius, -radius, radius * 2, radius * 2);
+    } else {
+        context.fillStyle = type.color;
+        context.fill();
+    }
+
+    context.restore();
+
+    // 枠線描画
+    context.save();
+    context.translate(x, y);
+    context.globalAlpha = alpha;
+    context.strokeStyle = "#231815";
+    context.lineWidth = 2.5;
+    context.beginPath();
+    context.arc(0, 0, radius, 0, 2 * Math.PI);
+    context.stroke();
+
+    // 画像がない場合のみテキスト表示
+    if (!type.imgElement || !type.imgElement.complete || type.imgElement.naturalWidth === 0) {
+        context.rotate(angle);
+        context.fillStyle = (type.color === "#f5f6fa" || type.color === "#fff200" || type.color === "#ffaaa6") ? "#231815" : "#fff";
+        context.font = `bold ${Math.max(9, radius * 0.42)}px sans-serif`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(type.name, 0, 0);
+    }
+
+    context.restore();
+}
+
+function renderLoop() {
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+    // デッドライン表示
+    ctx.strokeStyle = "rgba(230, 126, 34, 0.4)";
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, DEAD_LINE);
+    ctx.lineTo(WIDTH, DEAD_LINE);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // オブジェクトの描画
+    const bodies = Composite.allBodies(world);
+    bodies.forEach(body => {
+        if (body.isStatic) return;
+        const type = body.motsuType;
+        if (!type) return;
+
+        drawMotsu(ctx, body.position.x, body.position.y, type.radius, body.angle, type);
+    });
+
+    // ドロップ待機プレビュー
+    if (isReadyToDrop && !gameOver) {
+        const currentType = MOTSU_TYPES[currentMotsuIndex];
+        drawMotsu(ctx, previewX, DEAD_LINE - 25, currentType.radius, 0, currentType, 0.8);
+        
+        ctx.strokeStyle = "rgba(35, 24, 21, 0.1)";
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(previewX, DEAD_LINE - 25);
+        ctx.lineTo(previewX, HEIGHT);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    if (!gameOver) {
+        requestAnimationFrame(renderLoop);
+    }
+}
+
+function updatePreviewPosition(clientX) {
+    if (!isReadyToDrop || gameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    previewX = clientX - rect.left;
+    
+    const r = MOTSU_TYPES[currentMotsuIndex].radius;
+    if (previewX < r) previewX = r;
+    if (previewX > WIDTH - r) previewX = WIDTH - r;
+}
+
+canvas.addEventListener("mousemove", (e) => updatePreviewPosition(e.clientX));
+canvas.addEventListener("click", () => { if(isReadyToDrop && !gameOver) dropMotsu(); });
+
+canvas.addEventListener("touchmove", (e) => {
+    updatePreviewPosition(e.touches[0].clientX);
+    e.preventDefault();
+}, { passive: false });
+canvas.addEventListener("touchend", () => { if(isReadyToDrop && !gameOver) dropMotsu(); });
+
+function dropMotsu() {
+    isReadyToDrop = false;
+    const type = MOTSU_TYPES[currentMotsuIndex];
+    
+    const motsu = Bodies.circle(previewX, DEAD_LINE - 25, type.radius, {
+        restitution: MOTSU_PHYSICS.restitution,
+        friction: MOTSU_PHYSICS.friction,
+        density: MOTSU_PHYSICS.density
+    });
+    
+    motsu.motsuType = type;
+    motsu.spawnTime = Date.now();
+    motsu.lockTimer = 0;
+
+    Composite.add(world, motsu);
+
+    currentMotsuIndex = nextMotsuIndex;
+    nextMotsuIndex = getRandomMotsuIndex();
+    drawNext();
+
+    setTimeout(() => {
+        isReadyToDrop = true;
+        updatePreviewPosition(previewX);
+    }, 600);
+}
+
+// 合体ロジック
+Events.on(engine, 'collisionStart', (event) => {
+    const pairs = event.pairs;
+    
+    pairs.forEach(pair => {
+        const bodyA = pair.bodyA;
+        const bodyB = pair.bodyB;
+
+        if (bodyA.motsuType && bodyB.motsuType && bodyA.motsuType.name === bodyB.motsuType.name) {
+            if (bodyA.isDead || bodyB.isDead) return;
+
+            const currentIndex = MOTSU_TYPES.findIndex(m => m.name === bodyA.motsuType.name);
+            
+            if (currentIndex === MOTSU_TYPES.length - 1) {
+                score += 100;
+                document.getElementById("score-val").innerText = score;
+                bodyA.isDead = true; bodyB.isDead = true;
+                Composite.remove(world, [bodyA, bodyB]);
+                return;
+            }
+
+            const midX = (bodyA.position.x + bodyB.position.x) / 2;
+            const midY = (bodyA.position.y + bodyB.position.y) / 2;
+            const nextType = MOTSU_TYPES[currentIndex + 1];
+
+            bodyA.isDead = true;
+            bodyB.isDead = true;
+
+            Composite.remove(world, [bodyA, bodyB]);
+
+            const upgraded = Bodies.circle(midX, midY, nextType.radius, {
+                restitution: MOTSU_PHYSICS.restitution,
+                friction: MOTSU_PHYSICS.friction,
+                density: MOTSU_PHYSICS.density
+            });
+            upgraded.motsuType = nextType;
+            upgraded.spawnTime = Date.now();
+            upgraded.lockTimer = 0;
+
+            Composite.add(world, upgraded);
+
+            score += nextType.score;
+            document.getElementById("score-val").innerText = score;
+        }
+    });
+});
+
+// ラインオーバー判定
+Events.on(engine, 'afterUpdate', () => {
+    if (gameOver) return;
+    
+    const bodies = Composite.allBodies(world);
+    let triggerGameOver = false;
+
+    bodies.forEach(body => {
+        if (body.isStatic) return;
+        
+        const topY = body.position.y - body.motsuType.radius;
+        
+        if (topY < DEAD_LINE) {
+            if (Date.now() - body.spawnTime > 2000) { 
+                if (body.speed < 0.2) {
+                    body.lockTimer += 1;
+                    if (body.lockTimer > 60) {
+                        triggerGameOver = true;
+                    }
+                } else {
+                    body.lockTimer = 0; 
+                }
+            }
+        } else {
+            body.lockTimer = 0;
+        }
+    });
+
+    if (triggerGameOver) {
+        gameOverAction();
+    }
+});
+
+function gameOverAction() {
+    if (gameOver) return;
+    gameOver = true;
+    
+    setTimeout(() => {
+        alert(`【精算完了】\n最終スコア: ${score}点`);
+        location.reload();
+    }, 200);
+}
+
+init();
+</script>
+
+</body>
+</html>
