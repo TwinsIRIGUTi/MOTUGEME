@@ -2,57 +2,54 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>モツゲーム　ツルへの道</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モツゲーム ツルへの道</title>
     <style>
         * {
             box-sizing: border-box;
-            touch-action: manipulation;
         }
 
         html, body {
-            width: 100%;
-            height: 100%;
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
             background-color: #231815;
             color: #fff;
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
             overflow: hidden;
             user-select: none;
-            -webkit-user-select: none;
         }
 
-        /* アプリ全体のラッパー（画面中央配置＆ビューポート最適化） */
         #app-wrapper {
             width: 100vw;
             height: 100vh;
-            height: 100dvh;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            padding: 10px;
-            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            align-items: center;
+            padding: env(safe-area-inset-top, 5px) env(safe-area-inset-right, 5px) env(safe-area-inset-bottom, 5px) env(safe-area-inset-left, 5px);
         }
 
-        /* 拡大縮小で全画面にフィットさせるゲームコンテナ */
+        #scaler {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-origin: center center;
+        }
+
         #game-container {
             position: relative;
             width: 440px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            transform-origin: center center;
         }
 
         h1 {
             margin: 0 0 6px 0;
-            font-size: 20px;
+            font-size: 22px;
             color: #f39c12;
             text-shadow: 1px 1px 3px #000;
-            text-align: center;
-            letter-spacing: 1px;
         }
 
         #ui-layer {
@@ -65,11 +62,11 @@
 
         .info-box {
             background: #34231e;
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 8px;
             border: 2px solid #f39c12;
             font-weight: bold;
-            min-width: 80px;
+            min-width: 90px;
             text-align: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
@@ -84,6 +81,7 @@
             flex-direction: column;
             align-items: center;
             font-size: 11px;
+            min-width: 70px;
         }
 
         #next-canvas {
@@ -99,7 +97,7 @@
             border-top: none;
             border-radius: 0 0 20px 20px;
             background: #fffcf7;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.6);
             overflow: hidden;
             width: 400px;
             height: 560px;
@@ -107,29 +105,28 @@
 
         #game-canvas {
             display: block;
-            width: 400px;
-            height: 560px;
         }
 
-        /* 進化ガイド（コンパクト表示） */
         #evolution-line {
             width: 100%;
             background: #34231e;
-            padding: 4px;
+            padding: 6px;
             border-radius: 8px;
-            margin-top: 6px;
+            margin-top: 8px;
             display: flex;
             justify-content: space-around;
             align-items: center;
-            font-size: 8px;
+            font-size: 9px;
             border: 1px solid #553a33;
+            flex-wrap: wrap;
         }
 
         .evo-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 28px;
+            margin: 2px;
+            min-width: 32px;
         }
 
         .evo-circle {
@@ -142,7 +139,7 @@
         }
 
         .evo-name {
-            transform: scale(0.8);
+            transform: scale(0.85);
             white-space: nowrap;
         }
 
@@ -150,21 +147,18 @@
             display: flex;
             gap: 12px;
             margin-top: 8px;
-            width: 100%;
-            justify-content: center;
         }
 
         .btn-style {
             background: #c0392b;
             color: white;
             border: none;
-            padding: 8px 18px;
-            font-size: 13px;
+            padding: 8px 20px;
+            font-size: 14px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
             box-shadow: 0 4px #7f2318;
-            transition: background 0.2s, transform 0.1s;
         }
         .btn-style:active {
             transform: translateY(2px);
@@ -175,12 +169,10 @@
             background: #27ae60;
             box-shadow: 0 4px #1e8449;
         }
-        #sound-btn:active {
-            box-shadow: 0 2px #1e8449;
-        }
 
-        /* --- オーバーレイ モーダル (タイトル & ゲームオーバー) --- */
-        .overlay-modal {
+        /* モーダルオーバーレイ */
+        .overlay-screen {
+            display: flex;
             position: absolute;
             top: 0;
             left: 0;
@@ -188,32 +180,23 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.88);
             z-index: 20;
-            display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             border-radius: 0 0 15px 15px;
-            padding: 15px;
         }
 
-        #title-modal {
-            display: flex;
-            border-radius: 15px;
-        }
-
-        #game-over-modal {
-            display: none;
-        }
+        #title-screen { display: flex; }
+        #game-over-modal { display: none; }
 
         .modal-card {
             background: #34231e;
             border: 3px solid #f39c12;
-            padding: 16px;
+            padding: 16px 20px;
             border-radius: 12px;
             text-align: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-            width: 320px;
-            max-width: 90%;
+            width: 290px;
         }
 
         .modal-title {
@@ -225,35 +208,19 @@
             padding-bottom: 6px;
         }
 
-        .modal-score-label {
-            font-size: 11px;
-            color: #f39c12;
-            margin-top: 4px;
-        }
-
-        .modal-score-val {
-            font-size: 28px;
-            color: #fff;
-            margin: 0 0 8px 0;
-            font-weight: bold;
-        }
-
-        /* ランキング表示リスト */
         .ranking-box {
             background: #1a0f0d;
             border-radius: 8px;
-            padding: 8px 12px;
-            margin: 8px 0 14px 0;
+            padding: 8px;
+            margin: 10px 0 14px 0;
             border: 1px solid #553a33;
-            text-align: left;
         }
 
         .ranking-title {
-            font-size: 12px;
+            font-size: 11px;
             color: #f39c12;
-            font-weight: bold;
             margin-bottom: 6px;
-            text-align: center;
+            font-weight: bold;
         }
 
         .ranking-list {
@@ -269,18 +236,10 @@
             padding: 3px 6px;
             border-bottom: 1px dashed #34231e;
         }
-        .ranking-item:last-child {
-            border-bottom: none;
-        }
+        .ranking-item:last-child { border-bottom: none; }
+        .rank-num { color: #f39c12; font-weight: bold; }
+        .rank-score { color: #fff; font-weight: bold; }
 
-        .rank-num {
-            font-weight: bold;
-            color: #e67e22;
-            width: 24px;
-        }
-        .rank-top { color: #f1c40f; }
-
-        /* 部位実績エリア */
         .result-counts {
             background: #1a0f0d;
             border-radius: 8px;
@@ -319,166 +278,147 @@
             font-size: 14px;
         }
 
+        .btn-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
         .action-btn {
             background: #e67e22;
             color: #fff;
             border: none;
-            padding: 10px 20px;
+            padding: 10px 0;
             font-size: 15px;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
             box-shadow: 0 4px #a0520d;
             width: 100%;
-            margin-top: 6px;
         }
         .action-btn:active {
             transform: translateY(2px);
             box-shadow: 0 2px #a0520d;
         }
 
-        .sub-btn {
+        .secondary-btn {
             background: #7f8c8d;
             box-shadow: 0 4px #4d5656;
         }
-        .sub-btn:active {
+        .secondary-btn:active {
             box-shadow: 0 2px #4d5656;
         }
-
-        .modal-btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
     </style>
-    <!-- 物理エンジン Matter.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 </head>
 <body>
 
     <div id="app-wrapper">
-        <div id="game-container">
-            <h1>モツゲーム　ツルへの道</h1>
+        <div id="scaler">
+            <div id="game-container">
+                <h1>モツゲーム ツルへの道</h1>
 
-            <div id="ui-layer">
-                <div class="info-box">
-                    <span style="font-size: 10px; color:#f39c12;">SCORE</span><br>
-                    <span id="score-val" class="score-num">0</span>
-                </div>
-                <div id="next-container" class="info-box">
-                    <span style="color:#f39c12;">NEXT</span>
-                    <canvas id="next-canvas" width="40" height="40"></canvas>
-                </div>
-            </div>
-
-            <div id="canvas-container">
-                <canvas id="game-canvas" width="400" height="560"></canvas>
-
-                <!-- スタート（タイトル）画面モーダル -->
-                <div id="title-modal" class="overlay-modal">
-                    <div class="modal-card">
-                        <div class="modal-title">ツルへの道</div>
-                        <div style="font-size: 12px; color: #ccc; margin-bottom: 10px;">同じモツを合わせて大きくしよう！</div>
-                        
-                        <div class="ranking-box">
-                            <div class="ranking-title">🏆 ハイスコアランキング</div>
-                            <ul id="title-ranking-list" class="ranking-list">
-                                <!-- JavaScriptで動的生成 -->
-                            </ul>
-                        </div>
-
-                        <button class="action-btn" onclick="startGame()">ゲームスタート</button>
+                <div id="ui-layer">
+                    <div class="info-box">
+                        <span style="font-size: 10px; color:#f39c12;">SCORE</span><br>
+                        <span id="score-val" class="score-num">0</span>
+                    </div>
+                    <div id="next-container" class="info-box">
+                        <span style="color:#f39c12;">NEXT</span>
+                        <canvas id="next-canvas" width="44" height="44"></canvas>
                     </div>
                 </div>
 
-                <!-- 精算完了（ゲームオーバー）モーダル -->
-                <div id="game-over-modal" class="overlay-modal">
-                    <div class="modal-card">
-                        <div class="modal-title" style="color: #e74c3c;">精算完了</div>
-                        <div class="modal-score-label">FINAL SCORE</div>
-                        <div id="modal-score-val" class="modal-score-val">0</div>
+                <div id="canvas-container">
+                    <canvas id="game-canvas" width="400" height="560"></canvas>
 
-                        <!-- 作成実績カウント -->
-                        <div class="result-counts">
-                            <div class="result-row">
-                                <span class="result-label">
-                                    <span class="badge-icon" style="background-color: #1abc9c;"></span>
-                                    ツル（最大）
-                                </span>
-                                <span id="tsuru-count" class="result-val">0個</span>
+                    <!-- タイトル画面 -->
+                    <div id="title-screen" class="overlay-screen">
+                        <div class="modal-card">
+                            <div class="modal-title">モツゲーム<br><span style="font-size:16px; color:#fff;">ツルへの道</span></div>
+                            <div class="ranking-box">
+                                <div class="ranking-title">🏆 歴代ハイスコア 🏆</div>
+                                <div id="title-ranking-list" class="ranking-list"></div>
                             </div>
-                            <div class="result-row">
-                                <span class="result-label">
-                                    <span class="badge-icon" style="background-color: #ffaaa6;"></span>
-                                    コブクロ
-                                </span>
-                                <span id="kobukuro-count" class="result-val">0個</span>
-                            </div>
-                            <div class="result-row">
-                                <span class="result-label">
-                                    <span class="badge-icon" style="background-color: #f8a5c2;"></span>
-                                    テッポウ
-                                </span>
-                                <span id="teppou-count" class="result-val">0個</span>
-                            </div>
-                            <div class="result-row">
-                                <span class="result-label">
-                                    <span class="badge-icon" style="background-color: #b33939;"></span>
-                                    カシラ
-                                </span>
-                                <span id="kashira-count" class="result-val">0個</span>
-                            </div>
+                            <button class="action-btn" onclick="startGame()">暖簾をくぐる（開始）</button>
                         </div>
+                    </div>
 
-                        <div class="modal-btn-group">
-                            <button class="action-btn" onclick="resetAndStartGame()">もう一度遊ぶ</button>
-                            <button class="action-btn sub-btn" onclick="backToTitle()">タイトルへ戻る</button>
+                    <!-- ゲームオーバー画面 -->
+                    <div id="game-over-modal" class="overlay-screen">
+                        <div class="modal-card">
+                            <div class="modal-title" style="color:#e74c3c;">精算完了</div>
+                            <div style="font-size: 11px; color: #f39c12;">FINAL SCORE</div>
+                            <div id="modal-score-val" style="font-size: 28px; color: #fff; font-weight: bold; margin-bottom: 6px;">0</div>
+
+                            <div class="result-counts">
+                                <div class="result-row">
+                                    <span class="result-label"><span class="badge-icon" style="background-color: #1abc9c;"></span>ツル（最大）</span>
+                                    <span id="tsuru-count" class="result-val">0個</span>
+                                </div>
+                                <div class="result-row">
+                                    <span class="result-label"><span class="badge-icon" style="background-color: #ffaaa6;"></span>コブクロ</span>
+                                    <span id="kobukuro-count" class="result-val">0個</span>
+                                </div>
+                                <div class="result-row">
+                                    <span class="result-label"><span class="badge-icon" style="background-color: #f8a5c2;"></span>テッポウ</span>
+                                    <span id="teppou-count" class="result-val">0個</span>
+                                </div>
+                                <div class="result-row">
+                                    <span class="result-label"><span class="badge-icon" style="background-color: #b33939;"></span>カシラ</span>
+                                    <span id="kashira-count" class="result-val">0個</span>
+                                </div>
+                            </div>
+
+                            <div class="btn-stack">
+                                <button class="action-btn" onclick="restartGame()">もう一度？</button>
+                                <button class="action-btn secondary-btn" onclick="showTitle()">タイトルへ戻る</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 進化ガイド -->
-            <div id="evolution-line"></div>
+                <!-- 進化ガイド -->
+                <div id="evolution-line"></div>
 
-            <div class="controls-row">
-                <button id="sound-btn" class="btn-style" onclick="toggleSound()">BGM: OFF</button>
-                <button id="end-btn" class="btn-style" onclick="manualFinish()">精算（終了）</button>
+                <div class="controls-row">
+                    <button id="sound-btn" class="btn-style" onclick="toggleSound()">BGM: OFF</button>
+                    <button id="end-btn" class="btn-style" onclick="gameOverAction()">精算（終了）</button>
+                </div>
             </div>
         </div>
     </div>
 
 <script>
 // ==========================================
-// レスポンシブ スケーリング (スマホ画面対応)
+// 画面自動スケーリング処理（見切れ防止）
 // ==========================================
-function fitToScreen() {
-    const container = document.getElementById('game-container');
-    const wrapper = document.getElementById('app-wrapper');
+function updateScale() {
+    const scaler = document.getElementById("scaler");
+    const targetWidth = 450;
+    const targetHeight = 720;
     
-    // アプリケーション本来のベース高さと幅
-    const targetWidth = 440;
-    const targetHeight = 740;
+    const windowWidth = window.innerWidth - 10;
+    const windowHeight = window.innerHeight - 10;
 
-    const availableWidth = wrapper.clientWidth - 10;
-    const availableHeight = wrapper.clientHeight - 10;
-
-    const scaleX = availableWidth / targetWidth;
-    const scaleY = availableHeight / targetHeight;
-    
-    // 画面からはみ出さない最適なスケール値を適用
+    const scaleX = windowWidth / targetWidth;
+    const scaleY = windowHeight / targetHeight;
     const scale = Math.min(scaleX, scaleY, 1.0);
-    container.style.transform = `scale(${scale})`;
+
+    scaler.style.transform = `scale(${scale})`;
 }
 
-window.addEventListener('resize', fitToScreen);
-window.addEventListener('orientationchange', fitToScreen);
+window.addEventListener("resize", updateScale);
+window.addEventListener("orientationchange", () => setTimeout(updateScale, 100));
+updateScale();
 
 // ==========================================
-// Web Audio API 自作サウンドエンジン
+// まったり・和風アコースティックBGM & SE（Web Audio API）
 // ==========================================
 let audioCtx = null;
 let isSoundEnabled = false;
+let bgmTimer = null;
 
 function initAudio() {
     if (!audioCtx) {
@@ -505,101 +445,143 @@ function toggleSound() {
     }
 }
 
+// ドロップ音
 function playDropSound() {
-    if (!audioCtx || audioCtx.state !== 'running') return;
+    if (!audioCtx || audioCtx.state !== 'running' || !isSoundEnabled) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     
     osc.type = "sine";
-    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.12);
+    osc.frequency.setValueAtTime(260, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.15);
     
-    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
     
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.12);
+    osc.stop(audioCtx.currentTime + 0.15);
 }
 
+// 合体音
 function playMergeSound(level) {
-    if (!audioCtx || audioCtx.state !== 'running') return;
-    const baseFreq = 260 + level * 35;
+    if (!audioCtx || audioCtx.state !== 'running' || !isSoundEnabled) return;
+    const baseFreq = 220 + level * 28;
     
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     
     osc.type = "sine";
     osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, audioCtx.currentTime + 0.08);
-    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.8, audioCtx.currentTime + 0.18);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.4, audioCtx.currentTime + 0.1);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.6, audioCtx.currentTime + 0.22);
     
-    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
     
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.2);
+    osc.stop(audioCtx.currentTime + 0.25);
 }
 
+// ゲームオーバー音
 function playGameOverSound() {
-    if (!audioCtx || audioCtx.state !== 'running') return;
+    if (!audioCtx || audioCtx.state !== 'running' || !isSoundEnabled) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.6);
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.8);
     
     gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
     
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.6);
+    osc.stop(audioCtx.currentTime + 0.8);
 }
 
-let bgmInterval = null;
+// まったり和風アルペジオBGM
 function startBGM() {
-    if (!isSoundEnabled || bgmInterval) return;
+    if (!isSoundEnabled || bgmTimer) return;
     
-    const notes = [220, 247.5, 264, 293.66, 330, 352, 396, 440];
+    // 和風都節・陽旋法音階 (D4, F4, G4, A4, C5, D5, F5)
+    const scaleNotes = [293.66, 349.23, 392.00, 440.00, 523.25, 587.33, 698.46];
+    const sequence = [0, 2, 3, 4, 3, 2, 1, 3, 2, 4, 5, 4, 3, 1];
     let step = 0;
 
-    bgmInterval = setInterval(() => {
+    bgmTimer = setInterval(() => {
         if (!audioCtx || !isSoundEnabled) return;
+
+        const note = scaleNotes[sequence[step % sequence.length]];
         
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        
-        const note = notes[step % notes.length];
+        const filter = audioCtx.createBiquadFilter();
+
         osc.type = "triangle";
         osc.frequency.setValueAtTime(note, audioCtx.currentTime);
-        
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
-        
-        osc.connect(gain);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.55);
+
+        osc.connect(filter);
+        filter.connect(gain);
         gain.connect(audioCtx.destination);
+
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.22);
-        
+        osc.stop(audioCtx.currentTime + 0.55);
+
         step++;
-    }, 250);
+    }, 450);
 }
 
 function stopBGM() {
-    if (bgmInterval) {
-        clearInterval(bgmInterval);
-        bgmInterval = null;
+    if (bgmTimer) {
+        clearInterval(bgmTimer);
+        bgmTimer = null;
     }
 }
 
 // ==========================================
-// モツデータ定義 (11種)
+// スコアランキング（localStorage）
+// ==========================================
+function getHighScores() {
+    const scores = localStorage.getItem("motsu_scores");
+    return scores ? JSON.parse(scores) : [0, 0, 0, 0, 0];
+}
+
+function saveScore(newScore) {
+    if (newScore <= 0) return;
+    let scores = getHighScores();
+    scores.push(newScore);
+    scores.sort((a, b) => b - a);
+    scores = scores.slice(0, 5);
+    localStorage.setItem("motsu_scores", JSON.stringify(scores));
+}
+
+function updateTitleRankingDisplay() {
+    const list = document.getElementById("title-ranking-list");
+    list.innerHTML = "";
+    const scores = getHighScores();
+    
+    scores.forEach((sc, idx) => {
+        const item = document.createElement("div");
+        item.className = "ranking-item";
+        item.innerHTML = `<span class="rank-num">${idx + 1}位</span><span class="rank-score">${sc}点</span>`;
+        list.appendChild(item);
+    });
+}
+
+// ==========================================
+// 【モツ定義データ】
 // ==========================================
 const MOTSU_TYPES = [
     { name: "シロ",     radius: 13, color: "#f5f6fa", score: 1,  image: "images/shiro.png" },
@@ -624,58 +606,9 @@ MOTSU_TYPES.forEach(matsu => {
     }
 });
 
-// ==========================================
-// ランキング機能 (LocalStorage Persistence)
-// ==========================================
-const RANKING_KEY = "motsu_game_ranking_v1";
+const { Engine, Runner, Bodies, Composite, Body, Events } = Matter;
 
-function getRanking() {
-    try {
-        const data = localStorage.getItem(RANKING_KEY);
-        return data ? JSON.parse(data) : [0, 0, 0, 0, 0];
-    } catch (e) {
-        return [0, 0, 0, 0, 0];
-    }
-}
-
-function saveScoreToRanking(newScore) {
-    let ranking = getRanking();
-    ranking.push(newScore);
-    ranking.sort((a, b) => b - a);
-    ranking = ranking.slice(0, 5); // 上位5位
-    try {
-        localStorage.setItem(RANKING_KEY, JSON.stringify(ranking));
-    } catch (e) {}
-    return ranking;
-}
-
-function renderRankingUI() {
-    const ranking = getRanking();
-    const listEl = document.getElementById("title-ranking-list");
-    listEl.innerHTML = "";
-    
-    ranking.forEach((sc, idx) => {
-        const li = document.createElement("li");
-        li.className = "ranking-item";
-        li.innerHTML = `
-            <span class="rank-num ${idx === 0 ? 'rank-top' : ''}">${idx + 1}位</span>
-            <span style="font-weight:bold; color: ${sc > 0 ? '#fff' : '#777'}">${sc} pt</span>
-        `;
-        listEl.appendChild(li);
-    });
-}
-
-// ==========================================
-// ゲーム物理＆メインロジック
-// ==========================================
-const { Engine, Runner, Bodies, Composite, Events } = Matter;
-
-const engine = Engine.create({ 
-    gravity: { y: 1.0 },
-    constraintIterations: 4 
-});
-const world = engine.world;
-
+let engine, world, runner;
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
 const nextCanvas = document.getElementById("next-canvas");
@@ -693,10 +626,10 @@ let kashiraCreatedCount = 0;
 
 let currentMotsuIndex = 0;
 let nextMotsuIndex = 0;
-let isReadyToDrop = false;
+let isReadyToDrop = true;
 let previewX = WIDTH / 2;
 let gameOver = false;
-let gameStarted = false;
+let isPlaying = false;
 
 const MOTSU_PHYSICS = {
     restitution: 0.18, 
@@ -704,14 +637,27 @@ const MOTSU_PHYSICS = {
     density: 0.001
 };
 
-// 境界壁
-const wallOptions = { isStatic: true, friction: 0.1, render: { visible: false } };
-const ground = Bodies.rectangle(WIDTH / 2, HEIGHT + 40, WIDTH + 100, 80, wallOptions);
-const leftWall = Bodies.rectangle(-40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
-const rightWall = Bodies.rectangle(WIDTH + 40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
-Composite.add(world, [ground, leftWall, rightWall]);
+function initEngine() {
+    engine = Engine.create({ 
+        gravity: { y: 1.0 },
+        constraintIterations: 4 
+    });
+    world = engine.world;
 
-const runner = Runner.create();
+    const wallOptions = { isStatic: true, friction: 0.1, render: { visible: false } };
+    const ground = Bodies.rectangle(WIDTH / 2, HEIGHT + 40, WIDTH + 100, 80, wallOptions);
+    const leftWall = Bodies.rectangle(-40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
+    const rightWall = Bodies.rectangle(WIDTH + 40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
+    Composite.add(world, [ground, leftWall, rightWall]);
+
+    runner = Runner.create();
+    Runner.run(runner, engine);
+
+    // 衝突イベント
+    Events.on(engine, 'collisionStart', handleCollision);
+    // 更新後イベント（ラインオーバー判定）
+    Events.on(engine, 'afterUpdate', handleAfterUpdate);
+}
 
 function getRandomMotsuIndex() {
     return Math.floor(Math.random() * 5);
@@ -726,7 +672,7 @@ function buildEvolutionGuide() {
         const item = document.createElement("div");
         item.className = "evo-item";
         
-        const displaySize = Math.max(6, (m.radius / maxRadius) * 18);
+        const displaySize = Math.max(6, (m.radius / maxRadius) * 20);
         
         const circle = document.createElement("div");
         circle.className = "evo-circle";
@@ -749,65 +695,19 @@ function buildEvolutionGuide() {
     });
 }
 
-function startGame() {
-    initAudio();
-    document.getElementById("title-modal").style.display = "none";
-    resetGameState();
-    gameStarted = true;
-    Runner.run(runner, engine);
-    if (isSoundEnabled) startBGM();
-}
-
-function backToTitle() {
-    document.getElementById("game-over-modal").style.display = "none";
-    document.getElementById("title-modal").style.display = "flex";
-    renderRankingUI();
-    gameStarted = false;
-}
-
-function resetAndStartGame() {
-    document.getElementById("game-over-modal").style.display = "none";
-    resetGameState();
-    gameStarted = true;
-    if (isSoundEnabled) startBGM();
-}
-
-function resetGameState() {
-    // 画面上の物理ボディをクリア
-    const allBodies = Composite.allBodies(world);
-    allBodies.forEach(b => {
-        if (!b.isStatic) Composite.remove(world, b);
-    });
-
-    score = 0;
-    tsuruCreatedCount = 0;
-    kobukuroCreatedCount = 0;
-    teppouCreatedCount = 0;
-    kashiraCreatedCount = 0;
-    document.getElementById("score-val").innerText = "0";
-
-    currentMotsuIndex = getRandomMotsuIndex();
-    nextMotsuIndex = getRandomMotsuIndex();
-    previewX = WIDTH / 2;
-    gameOver = false;
-    isReadyToDrop = true;
-
-    drawNext();
-}
-
 function drawNext() {
-    nextCtx.clearRect(0, 0, 40, 40);
+    nextCtx.clearRect(0, 0, 44, 44);
     const nextType = MOTSU_TYPES[nextMotsuIndex];
-    const r = Math.min(14, nextType.radius * 0.7);
+    const r = Math.min(14, nextType.radius * 0.75);
 
     nextCtx.save();
     nextCtx.beginPath();
-    nextCtx.arc(20, 20, r, 0, 2 * Math.PI);
+    nextCtx.arc(22, 22, r, 0, 2 * Math.PI);
     nextCtx.closePath();
     nextCtx.clip();
 
     if (nextType.imgElement && nextType.imgElement.complete && nextType.imgElement.naturalWidth !== 0) {
-        nextCtx.drawImage(nextType.imgElement, 20 - r, 20 - r, r * 2, r * 2);
+        nextCtx.drawImage(nextType.imgElement, 22 - r, 22 - r, r * 2, r * 2);
     } else {
         nextCtx.fillStyle = nextType.color;
         nextCtx.fill();
@@ -818,7 +718,7 @@ function drawNext() {
     nextCtx.strokeStyle = "#fff";
     nextCtx.lineWidth = 1.5;
     nextCtx.beginPath();
-    nextCtx.arc(20, 20, r, 0, 2 * Math.PI);
+    nextCtx.arc(22, 22, r, 0, 2 * Math.PI);
     nextCtx.stroke();
 }
 
@@ -866,7 +766,6 @@ function drawMotsu(context, x, y, radius, angle, type, alpha = 1.0) {
 function renderLoop() {
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
-    // デッドライン描画
     ctx.strokeStyle = "rgba(230, 126, 34, 0.4)";
     ctx.setLineDash([6, 4]);
     ctx.lineWidth = 2;
@@ -876,18 +775,18 @@ function renderLoop() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 物理ボディの描画
-    const bodies = Composite.allBodies(world);
-    bodies.forEach(body => {
-        if (body.isStatic) return;
-        const type = body.motsuType;
-        if (!type) return;
+    if (engine) {
+        const bodies = Composite.allBodies(world);
+        bodies.forEach(body => {
+            if (body.isStatic) return;
+            const type = body.motsuType;
+            if (!type) return;
 
-        drawMotsu(ctx, body.position.x, body.position.y, type.radius, body.angle, type);
-    });
+            drawMotsu(ctx, body.position.x, body.position.y, type.radius, body.angle, type);
+        });
+    }
 
-    // プレビュー表示
-    if (gameStarted && isReadyToDrop && !gameOver) {
+    if (isPlaying && isReadyToDrop && !gameOver) {
         const currentType = MOTSU_TYPES[currentMotsuIndex];
         drawMotsu(ctx, previewX, DEAD_LINE - 25, currentType.radius, 0, currentType, 0.8);
         
@@ -904,32 +803,35 @@ function renderLoop() {
 }
 
 function updatePreviewPosition(clientX) {
-    if (!gameStarted || !isReadyToDrop || gameOver) return;
+    if (!isPlaying || !isReadyToDrop || gameOver) return;
     const rect = canvas.getBoundingClientRect();
     
-    // スケール変更に対応した正確な座標計算
-    const scaleX = canvas.width / rect.width;
-    previewX = (clientX - rect.left) * scaleX;
+    // スケーリング比率の補正
+    const scale = rect.width / WIDTH;
+    previewX = (clientX - rect.left) / scale;
     
     const r = MOTSU_TYPES[currentMotsuIndex].radius;
     if (previewX < r) previewX = r;
     if (previewX > WIDTH - r) previewX = WIDTH - r;
 }
 
-// 操作イベントリスナー
 canvas.addEventListener("mousemove", (e) => updatePreviewPosition(e.clientX));
 canvas.addEventListener("click", () => { 
+    if(!isPlaying) return;
     initAudio();
-    if(gameStarted && isReadyToDrop && !gameOver) dropMotsu(); 
+    if(isReadyToDrop && !gameOver) dropMotsu(); 
 });
 
 canvas.addEventListener("touchmove", (e) => {
+    if(!isPlaying) return;
     updatePreviewPosition(e.touches[0].clientX);
     e.preventDefault();
 }, { passive: false });
+
 canvas.addEventListener("touchend", () => { 
+    if(!isPlaying) return;
     initAudio();
-    if(gameStarted && isReadyToDrop && !gameOver) dropMotsu(); 
+    if(isReadyToDrop && !gameOver) dropMotsu(); 
 });
 
 function dropMotsu() {
@@ -955,15 +857,12 @@ function dropMotsu() {
     drawNext();
 
     setTimeout(() => {
-        if (!gameOver && gameStarted) {
-            isReadyToDrop = true;
-        }
+        isReadyToDrop = true;
+        updatePreviewPosition(previewX);
     }, 600);
 }
 
-// --- 衝突・合体処理 ---
-Events.on(engine, 'collisionStart', (event) => {
-    if (!gameStarted || gameOver) return;
+function handleCollision(event) {
     const pairs = event.pairs;
     
     pairs.forEach(pair => {
@@ -975,7 +874,6 @@ Events.on(engine, 'collisionStart', (event) => {
 
             const currentIndex = MOTSU_TYPES.findIndex(m => m.name === bodyA.motsuType.name);
             
-            // 最大サイズ「ツル」同士の合体
             if (currentIndex === MOTSU_TYPES.length - 1) {
                 score += 100;
                 document.getElementById("score-val").innerText = score;
@@ -989,16 +887,10 @@ Events.on(engine, 'collisionStart', (event) => {
             const midY = (bodyA.position.y + bodyB.position.y) / 2;
             const nextType = MOTSU_TYPES[currentIndex + 1];
 
-            // 実績のカウントアップ（ツル、コブクロ、テッポウ、カシラ）
-            if (nextType.name === "ツル") {
-                tsuruCreatedCount++;
-            } else if (nextType.name === "コブクロ") {
-                kobukuroCreatedCount++;
-            } else if (nextType.name === "テッポウ") {
-                teppouCreatedCount++;
-            } else if (nextType.name === "カシラ") {
-                kashiraCreatedCount++;
-            }
+            if (nextType.name === "ツル") tsuruCreatedCount++;
+            else if (nextType.name === "コブクロ") kobukuroCreatedCount++;
+            else if (nextType.name === "テッポウ") teppouCreatedCount++;
+            else if (nextType.name === "カシラ") kashiraCreatedCount++;
 
             bodyA.isDead = true;
             bodyB.isDead = true;
@@ -1022,11 +914,10 @@ Events.on(engine, 'collisionStart', (event) => {
             playMergeSound(currentIndex + 1);
         }
     });
-});
+}
 
-// --- デッドラインオーバー判定 (ドロップ後3秒経過 & 1.5秒間静止) ---
-Events.on(engine, 'afterUpdate', () => {
-    if (!gameStarted || gameOver) return;
+function handleAfterUpdate() {
+    if (gameOver || !isPlaying) return;
     
     const bodies = Composite.allBodies(world);
     let triggerGameOver = false;
@@ -1034,13 +925,15 @@ Events.on(engine, 'afterUpdate', () => {
     bodies.forEach(body => {
         if (body.isStatic) return;
         
+        // 赤点線（DEAD_LINE）を超えているか判定
         const topY = body.position.y - body.motsuType.radius;
         
         if (topY < DEAD_LINE) {
+            // ドロップ後3秒以上経過しており、画面上で静止した場合のみカウント
             if (Date.now() - body.spawnTime > 3000) { 
                 if (body.speed < 0.15) {
                     body.lockTimer += 1;
-                    if (body.lockTimer > 90) { // 1.5秒間動かず停止した場合
+                    if (body.lockTimer > 90) { // 赤点線上で約1.5秒（90フレーム）動かず静止した場合のみゲームオーバー
                         triggerGameOver = true;
                     }
                 } else {
@@ -1055,42 +948,75 @@ Events.on(engine, 'afterUpdate', () => {
     if (triggerGameOver) {
         gameOverAction();
     }
-});
-
-function manualFinish() {
-    if (!gameStarted || gameOver) return;
-    gameOverAction();
 }
 
-// --- リザルト画面表示 ＆ ハイスコア保存 ---
 function gameOverAction() {
     if (gameOver) return;
     gameOver = true;
-    stopBGM();
-    playGameOverSound();
+    isPlaying = false;
     
-    // スコアの記録
-    saveScoreToRanking(score);
-
-    // スコア＆各カウントの反映
+    playGameOverSound();
+    saveScore(score);
+    
     document.getElementById("modal-score-val").innerText = score;
     document.getElementById("tsuru-count").innerText = `${tsuruCreatedCount}個`;
     document.getElementById("kobukuro-count").innerText = `${kobukuroCreatedCount}個`;
     document.getElementById("teppou-count").innerText = `${teppouCreatedCount}個`;
     document.getElementById("kashira-count").innerText = `${kashiraCreatedCount}個`;
     
-    // 精算完了ダイアログの表示
-    const modal = document.getElementById("game-over-modal");
-    modal.style.display = "flex";
+    document.getElementById("game-over-modal").style.display = "flex";
 }
 
-// 初期化
-window.onload = function() {
-    buildEvolutionGuide();
-    renderRankingUI();
-    fitToScreen();
-    requestAnimationFrame(renderLoop);
-};
+function startGame() {
+    initAudio();
+    document.getElementById("title-screen").style.display = "none";
+    resetGameState();
+}
+
+function restartGame() {
+    document.getElementById("game-over-modal").style.display = "none";
+    resetGameState();
+}
+
+function showTitle() {
+    document.getElementById("game-over-modal").style.display = "none";
+    document.getElementById("title-screen").style.display = "flex";
+    updateTitleRankingDisplay();
+    isPlaying = false;
+}
+
+function resetGameState() {
+    score = 0;
+    tsuruCreatedCount = 0;
+    kobukuroCreatedCount = 0;
+    teppouCreatedCount = 0;
+    kashiraCreatedCount = 0;
+    
+    document.getElementById("score-val").innerText = "0";
+
+    if (engine) {
+        Composite.clear(world, false);
+        const wallOptions = { isStatic: true, friction: 0.1, render: { visible: false } };
+        const ground = Bodies.rectangle(WIDTH / 2, HEIGHT + 40, WIDTH + 100, 80, wallOptions);
+        const leftWall = Bodies.rectangle(-40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
+        const rightWall = Bodies.rectangle(WIDTH + 40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
+        Composite.add(world, [ground, leftWall, rightWall]);
+    } else {
+        initEngine();
+    }
+
+    currentMotsuIndex = getRandomMotsuIndex();
+    nextMotsuIndex = getRandomMotsuIndex();
+    drawNext();
+
+    gameOver = false;
+    isReadyToDrop = true;
+    isPlaying = true;
+}
+
+buildEvolutionGuide();
+updateTitleRankingDisplay();
+requestAnimationFrame(renderLoop);
 </script>
 
 </body>
