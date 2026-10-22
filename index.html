@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>モツの山 - 本家完全再現システム</title>
+    <title>モツゲーム ツルへの道</title>
     <style>
         body {
             margin: 0;
@@ -145,7 +145,7 @@
 </head>
 <body>
 
-    <h1>モツの山 - 本家完全再現システム</h1>
+    <h1>モツゲーム ツルへの道</h1>
 
     <div id="game-container">
         <div id="ui-layer">
@@ -172,20 +172,20 @@
 <script>
 // ==========================================
 // 【モツ定義データ】
-// image プロパティに実際の画像ファイル名を指定してください
+// images/ サブフォルダ下のパスを指定
 // ==========================================
 const MOTSU_TYPES = [
-    { name: "シロ",     radius: 13, color: "#f5f6fa", score: 1,  image: "shiro.png" },
-    { name: "レバ",     radius: 19, color: "#8b1e0f", score: 3,  image: "reba.png" },
-    { name: "ガツ",     radius: 26, color: "#f5cd79", score: 6,  image: "gatsu.png" },
-    { name: "アブラ",   radius: 34, color: "#fff200", score: 10, image: "abura.png" },
-    { name: "ナンコツ", radius: 42, color: "#bdc3c7", score: 15, image: "nankotsu.png" },
-    { name: "ハツ",     radius: 51, color: "#d63031", score: 21, image: "hatsu.png" },
-    { name: "タン",     radius: 61, color: "#e17055", score: 28, image: "tan.png" },
-    { name: "カシラ",   radius: 71, color: "#b33939", score: 36, image: "kashira.png" },
-    { name: "テッポウ", radius: 82, color: "#f8a5c2", score: 45, image: "teppou.png" },
-    { name: "コブクロ", radius: 93, color: "#ffaaa6", score: 55, image: "kobukuro.png" },
-    { name: "ツル",     radius: 105, color: "#1abc9c", score: 66, image: "tsuru.png" }
+    { name: "シロ",     radius: 13, color: "#f5f6fa", score: 1,  image: "images/shiro.png" },
+    { name: "レバ",     radius: 19, color: "#8b1e0f", score: 3,  image: "images/reba.png" },
+    { name: "ガツ",     radius: 26, color: "#f5cd79", score: 6,  image: "images/gatsu.png" },
+    { name: "アブラ",   radius: 34, color: "#fff200", score: 10, image: "images/abura.png" },
+    { name: "ナンコツ", radius: 42, color: "#bdc3c7", score: 15, image: "images/nankotsu.png" },
+    { name: "ハツ",     radius: 51, color: "#d63031", score: 21, image: "images/hatsu.png" },
+    { name: "タン",     radius: 61, color: "#e17055", score: 28, image: "images/tan.png" },
+    { name: "カシラ",   radius: 71, color: "#b33939", score: 36, image: "images/kashira.png" },
+    { name: "テッポウ", radius: 82, color: "#f8a5c2", score: 45, image: "images/teppou.png" },
+    { name: "コブクロ", radius: 93, color: "#ffaaa6", score: 55, image: "images/kobukuro.png" },
+    { name: "ツル",     radius: 105, color: "#1abc9c", score: 66, image: "images/tsuru.png" }
 ];
 
 // 画像オブジェクトのプリロード処理
@@ -305,20 +305,17 @@ function drawNext() {
     nextCtx.stroke();
 }
 
-// モツ（画像または単色円）の共通描画関数
 function drawMotsu(context, x, y, radius, angle, type, alpha = 1.0) {
     context.save();
     context.translate(x, y);
     context.rotate(angle);
     context.globalAlpha = alpha;
 
-    // 円形にクリッピング
     context.beginPath();
     context.arc(0, 0, radius, 0, 2 * Math.PI);
     context.closePath();
     context.clip();
 
-    // 画像があれば描画、読み込み前や未設定の場合はベースカラーを描画
     if (type.imgElement && type.imgElement.complete && type.imgElement.naturalWidth !== 0) {
         context.drawImage(type.imgElement, -radius, -radius, radius * 2, radius * 2);
     } else {
@@ -328,7 +325,6 @@ function drawMotsu(context, x, y, radius, angle, type, alpha = 1.0) {
 
     context.restore();
 
-    // 枠線描画
     context.save();
     context.translate(x, y);
     context.globalAlpha = alpha;
@@ -338,7 +334,6 @@ function drawMotsu(context, x, y, radius, angle, type, alpha = 1.0) {
     context.arc(0, 0, radius, 0, 2 * Math.PI);
     context.stroke();
 
-    // 画像がない場合のみテキスト表示
     if (!type.imgElement || !type.imgElement.complete || type.imgElement.naturalWidth === 0) {
         context.rotate(angle);
         context.fillStyle = (type.color === "#f5f6fa" || type.color === "#fff200" || type.color === "#ffaaa6") ? "#231815" : "#fff";
@@ -354,7 +349,6 @@ function drawMotsu(context, x, y, radius, angle, type, alpha = 1.0) {
 function renderLoop() {
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
-    // デッドライン表示
     ctx.strokeStyle = "rgba(230, 126, 34, 0.4)";
     ctx.setLineDash([6, 4]);
     ctx.lineWidth = 2;
@@ -364,7 +358,6 @@ function renderLoop() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // オブジェクトの描画
     const bodies = Composite.allBodies(world);
     bodies.forEach(body => {
         if (body.isStatic) return;
@@ -374,7 +367,6 @@ function renderLoop() {
         drawMotsu(ctx, body.position.x, body.position.y, type.radius, body.angle, type);
     });
 
-    // ドロップ待機プレビュー
     if (isReadyToDrop && !gameOver) {
         const currentType = MOTSU_TYPES[currentMotsuIndex];
         drawMotsu(ctx, previewX, DEAD_LINE - 25, currentType.radius, 0, currentType, 0.8);
@@ -438,7 +430,6 @@ function dropMotsu() {
     }, 600);
 }
 
-// 合体ロジック
 Events.on(engine, 'collisionStart', (event) => {
     const pairs = event.pairs;
     
@@ -485,7 +476,6 @@ Events.on(engine, 'collisionStart', (event) => {
     });
 });
 
-// ラインオーバー判定
 Events.on(engine, 'afterUpdate', () => {
     if (gameOver) return;
     
