@@ -123,21 +123,34 @@
             white-space: nowrap;
         }
 
-        #end-btn {
+        .controls-row {
+            display: flex;
+            gap: 12px;
             margin-top: 10px;
+        }
+
+        .btn-style {
             background: #c0392b;
             color: white;
             border: none;
-            padding: 8px 24px;
+            padding: 8px 20px;
             font-size: 14px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
             box-shadow: 0 4px #7f2318;
         }
-        #end-btn:active {
+        .btn-style:active {
             transform: translateY(2px);
             box-shadow: 0 2px #7f2318;
+        }
+
+        #sound-btn {
+            background: #27ae60;
+            box-shadow: 0 4px #1e8449;
+        }
+        #sound-btn:active {
+            box-shadow: 0 2px #1e8449;
         }
     </style>
     <!-- 物理エンジン Matter.js -->
@@ -166,10 +179,143 @@
         <!-- 進化ガイド -->
         <div id="evolution-line"></div>
 
-        <button id="end-btn" onclick="gameOverAction()">精算（終了）</button>
+        <div class="controls-row">
+            <button id="sound-btn" class="btn-style" onclick="toggleSound()">BGM: OFF</button>
+            <button id="end-btn" class="btn-style" onclick="gameOverAction()">精算（終了）</button>
+        </div>
     </div>
 
 <script>
+// ==========================================
+// Web Audio API による自作サウンド合成エンジン（外部ファイル不要）
+// ==========================================
+let audioCtx = null;
+let bgmSource = null;
+let bgmGain = null;
+let isSoundEnabled = false;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function toggleSound() {
+    initAudio();
+    isSoundEnabled = !isSoundEnabled;
+    const btn = document.getElementById("sound-btn");
+    
+    if (isSoundEnabled) {
+        btn.innerText = "BGM: ON";
+        btn.style.background = "#27ae60";
+        startBGM();
+    } else {
+        btn.innerText = "BGM: OFF";
+        btn.style.background = "#7f8c8d";
+        stopBGM();
+    }
+}
+
+// ドロップ音（「ぽとん」）
+function playDropSound() {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.12);
+    
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.12);
+}
+
+// 合体・シンクロ音（「ぽよん♪」）
+function playMergeSound(level) {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const baseFreq = 260 + level * 35; // 進化段階に応じて音高がアップ
+    
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, audioCtx.currentTime + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.8, audioCtx.currentTime + 0.18);
+    
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
+}
+
+// ゲームオーバー音
+function playGameOverSound() {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.6);
+    
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.6);
+}
+
+// 昭和風レトロBGM（シンセベース＆アルペジオ生成）
+let bgmInterval = null;
+function startBGM() {
+    if (!isSoundEnabled || bgmInterval) return;
+    
+    const notes = [220, 247.5, 264, 293.66, 330, 352, 396, 440]; // Aマイナーペンタ
+    let step = 0;
+
+    bgmInterval = setInterval(() => {
+        if (!audioCtx || !isSoundEnabled) return;
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        const note = notes[step % notes.length];
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(note, audioCtx.currentTime);
+        
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.22);
+        
+        step++;
+    }, 250);
+}
+
+function stopBGM() {
+    if (bgmInterval) {
+        clearInterval(bgmInterval);
+        bgmInterval = null;
+    }
+}
+
 // ==========================================
 // 【モツ定義データ】
 // images/ サブフォルダ下のパスを指定
@@ -188,11 +334,11 @@ const MOTSU_TYPES = [
     { name: "ツル",     radius: 105, color: "#1abc9c", score: 66, image: "images/tsuru.png" }
 ];
 
-// 画像オブジェクトのプリロード処理
+const cacheBuster = Date.now();
 MOTSU_TYPES.forEach(matsu => {
     if (matsu.image) {
         const img = new Image();
-        img.src = matsu.image;
+        img.src = matsu.image + "?v=" + cacheBuster;
         matsu.imgElement = img;
     }
 });
@@ -263,7 +409,7 @@ function buildEvolutionGuide() {
         circle.style.height = `${displaySize}px`;
         
         if (m.image) {
-            circle.style.backgroundImage = `url(${m.image})`;
+            circle.style.backgroundImage = `url(${m.image}?v=${cacheBuster})`;
         } else {
             circle.style.backgroundColor = m.color;
         }
@@ -396,16 +542,24 @@ function updatePreviewPosition(clientX) {
 }
 
 canvas.addEventListener("mousemove", (e) => updatePreviewPosition(e.clientX));
-canvas.addEventListener("click", () => { if(isReadyToDrop && !gameOver) dropMotsu(); });
+canvas.addEventListener("click", () => { 
+    initAudio();
+    if(isReadyToDrop && !gameOver) dropMotsu(); 
+});
 
 canvas.addEventListener("touchmove", (e) => {
     updatePreviewPosition(e.touches[0].clientX);
     e.preventDefault();
 }, { passive: false });
-canvas.addEventListener("touchend", () => { if(isReadyToDrop && !gameOver) dropMotsu(); });
+canvas.addEventListener("touchend", () => { 
+    initAudio();
+    if(isReadyToDrop && !gameOver) dropMotsu(); 
+});
 
 function dropMotsu() {
     isReadyToDrop = false;
+    playDropSound(); // 落下音
+
     const type = MOTSU_TYPES[currentMotsuIndex];
     
     const motsu = Bodies.circle(previewX, DEAD_LINE - 25, type.radius, {
@@ -445,6 +599,7 @@ Events.on(engine, 'collisionStart', (event) => {
             if (currentIndex === MOTSU_TYPES.length - 1) {
                 score += 100;
                 document.getElementById("score-val").innerText = score;
+                playMergeSound(currentIndex + 2);
                 bodyA.isDead = true; bodyB.isDead = true;
                 Composite.remove(world, [bodyA, bodyB]);
                 return;
@@ -472,6 +627,8 @@ Events.on(engine, 'collisionStart', (event) => {
 
             score += nextType.score;
             document.getElementById("score-val").innerText = score;
+
+            playMergeSound(currentIndex + 1); // 合体音（大きいモツほど高音で気持ちいい）
         }
     });
 });
@@ -511,6 +668,8 @@ Events.on(engine, 'afterUpdate', () => {
 function gameOverAction() {
     if (gameOver) return;
     gameOver = true;
+    stopBGM();
+    playGameOverSound();
     
     setTimeout(() => {
         alert(`【精算完了】\n最終スコア: ${score}点`);
